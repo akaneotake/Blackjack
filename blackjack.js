@@ -2,7 +2,6 @@
 // For Player
 var cardDeck = [];
 var cardDeckObj = {};
-var first2Cards = [];
 var sum = 0;
 // For Dealer
 var cardDeck_D = [];
@@ -10,25 +9,27 @@ var first2Cards_D = [];
 var sum_D = 0;
 // For Games against Dealer
 var checkGameType = 0;
+var turn = "";
 var bet = 0;
 var wallet = 0;
 
 ////// Functions
 // [Function] Make an array of card deck with 52 cards
 function generate52Cards() {
+  var deck = [];
   var suits = ["C", "S", "D", "H"];
   var ranks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
   for (var i = 0; i < suits.length; i++) {
     for (var j = 0; j < ranks.length; j++) {
-      cardDeck.push(suits[i] + ranks[j]);
+      deck.push(suits[i] + ranks[j]);
     };
   };
-  return cardDeck;
+  return deck;
 };
 
 // [Function] Make an object of the 52 cards (property = card: number value)
 function createCardDeckObj() {
-  var numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
+  var numbers = [11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
   // make property values (number)
   var numberValue = numbers.concat(numbers).concat(numbers.concat(numbers));
   // connect keys and values
@@ -38,24 +39,85 @@ function createCardDeckObj() {
     cardDeckObj[a] = b;
   }
   // change the values of aces
-  cardDeckObj.C1 = [1, 11];
-  cardDeckObj.S1 = [1, 11];
-  cardDeckObj.D1 = [1, 11];
-  cardDeckObj.H1 = [1, 11];
   return cardDeckObj;
 }
 
-// [Function] Delete the dealt card (argument = name of the card)
-function removeCard(card) {
-  var index = cardDeck.indexOf(card);
-  if (index !== -1) {
-    return cardDeck.slice(0, index).concat(cardDeck.slice(index + 1));
+// [Function] Deal the first card
+function dealFirstCard(array) {
+  this.firstCard = array[Math.floor(Math.random() * array.length)];
+  array = removeCard(array, this.firstCard);
+  if (turn === "dealer") {
+    detectAce(this.firstCard);
   }
-  return cardDeck;
+  return array;
+};
+// [Function] Deal the second card
+function dealSecondCard(array) {
+  this.secondCard = array[Math.floor(Math.random() * array.length)];
+  array = removeCard(array, this.secondCard);
+  if (turn === "dealer") {
+    detectAce(this.secondCard);
+  }
+  return array;
+};
+
+// [Function] Delete the dealt card (argument = name of the card)
+function removeCard(array, card) {
+  var index = array.indexOf(card);
+  array = array.slice(0, index).concat(array.slice(index + 1));
+  return array;
+};
+
+// [Function] Ace detector
+function detectAce(card) {
+  // decide the behavior of the ace
+  if (card === "C1" || card === "S1" || card === "D1" || card === "H1") {
+    if (turn === "player") {
+      sum += cardDeckObj[card];
+      if (sum < 21) {
+        if (cardDeck.length === 51) {
+          return sum;
+        } else {
+          return choose1or11();
+        };
+      } else if (sum > 21) {
+        sum -= 10;
+        return sum;
+      };
+    } else if (turn === "dealer") {
+      sum_D += cardDeckObj[card];
+      if (sum_D > 21) {
+        sum_D -= 10;
+      };
+      return sum_D;
+    };
+  } else {
+    if (turn === "player") {
+      sum += cardDeckObj[card];
+      return sum;
+    } else if (turn === "dealer") {
+      sum_D += cardDeckObj[card];
+      return sum_D;
+    };
+  };
+};
+
+// [Function] Choose 1 or 11 if the card is an ace (for player)
+function choose1or11() {
+  var oneOrEleven = prompt("The Ace can be counted either 1 or 11. Which value do you want to use?\nEnter 1 or 11:");
+  if (oneOrEleven === "1") {
+    sum -= 10;
+    return sum;
+  } else if (oneOrEleven === "11") {
+    return sum;
+  } else if (oneOrEleven) {
+    alert("Please type 1 or 11!");
+    return choose1or11();
+  };
 };
 
 ////// Play against a dealer
-// 3. Decide the bet
+// 2.1. Decide the bet
 function playerBet(money) {
   // get the first $100
   wallet += Number(money);
@@ -83,23 +145,21 @@ function playerBet(money) {
   };
 };
 
-// 4. Dealer: Deal the first 2 cards and delete them from the card deck (show one card to the player)
-function deal2Cards_D() { 
+// 2.2. Dealer: Deal the first 2 cards and delete them from the card deck (show one card to the player)
+function deal2Cards_D() {
   // reset the card deck and sum for dealer
   cardDeck_D = [];
   cardDeck_D = generate52Cards();
   sum_D = 0;
+  turn = "dealer";
   // First card
-  var firstCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
-  cardDeck_D = removeCard(firstCard);
+  cardDeck_D = dealFirstCard(cardDeck_D);
   // Second card
-  var secondCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
-  cardDeck_D = removeCard(secondCard);
-  // set the first 2 cards in the array
-  first2Cards_D = [firstCard, secondCard];
+  cardDeck_D = dealSecondCard(cardDeck_D);
+  first2Cards_D = [this.firstCard, this.secondCard];
   // show one of the dealer's card to player 
   alert("First, the dealer gets 2 cards.");
-  alert("One of the dealer's card is [" + first2Cards_D[0]+ "]");
+  alert("One of the dealer's card is [" + this.firstCard + "]");
   alert("Now, you get the first 2 cards.");
   // Player's turn (use the same functions as single play)
   return deal2Cards();
@@ -107,94 +167,39 @@ function deal2Cards_D() {
 
 // 6. Dealer: get next cards
 function dealer() {
-  alert("Now dealer's turn.\nDealer's first 2 cards were [" + first2Cards_D + "]");
-  return separateAce_D(first2Cards_D);
-};
-
-// 6.5.Dealer: Ace detector (Choose 1 or 11 if the card is ace)
-function separateAce_D(array) {  
-  var f_D = array[0];
-  var s_D = array[1];
-  var f1_D = cardDeckObj[f_D][0] + cardDeckObj[s_D];
-  var f11_D = cardDeckObj[f_D][1] + cardDeckObj[s_D];
-  var s1_D = cardDeckObj[f_D] + cardDeckObj[s_D][0];
-  var s11_D = cardDeckObj[f_D] + cardDeckObj[s_D][1];
-  // if the both of first 2 cards are aces:
-  if ((f_D==="C1" || f_D==="S1" || f_D==="D1" || f_D==="H1") && (s_D==="C1" || s_D==="S1" || s_D==="D1" || s_D==="H1")) {
-    return addSum_D(12); 
-  // if the first card is ace:
-  } else if (f_D==="C1" || f_D==="S1" || f_D==="D1" || f_D==="H1") {
-    if (f11_D === 21) {
-      return addSum_D(21);
-    } else if (f11_D > 21) {
-      return addSum_D(f1_D);
-    } else {
-      return addSum_D(f11_D);
-    };     
-  // if the second card is ace:
-  } else if (s_D==="C1" || s_D==="S1" || s_D==="D1" || s_D==="H1") {
-    if (s11_D === 21) {
-      return addSum_D(21);
-    } else if (s11_D > 21) {
-      return addSum_D(s1_D);
-    } else {
-      return addSum_D(s11_D);
-    };
-  // if there is no ace in the first 2 cards:
-  } else {
-    return addSum_D(cardDeckObj[f_D] + cardDeckObj[s_D]);
+  turn = "dealer";
+  if (cardDeck_D.length === 50) {
+    alert("Now dealer's turn.\nDealer's first 2 cards were [" + first2Cards_D + "]");
   };
-};
-
-// 7.Dealer: Make the sum of the cards 
-function addSum_D(sumNumber) {
-  // gather points
-  sum_D += sumNumber;
-  alert("Dealer has " + sum_D + " points.");  
+  alert("The sum of the dealer's cards = " + sum_D);
   // if the sum is exactly 21 points:
   if (sum_D === 21) {
-    if (cardDeck_D.length === "50") {
+    if (cardDeck_D.length === 50) {
       alert("Oh no, he got Black Jack!!!");
-    } else {  
-       alert("Oh no, he got exactly 21 points!");
+    } else {
+      alert("Oh no, he got exactly 21 points!");
     };
     return playerVSdealer();
-  // if the sum is either over 21 or under:
+    // if the sum is over 21
   } else if (sum_D > 21) {
     alert("He busts! yeahhhhhhhhh!!!");
     return playerVSdealer();
-  } else {
-    return standOrHit_D();
-  };
-};
-
-// 8.Dealer: Choose Stand or Hit
-function standOrHit_D() {
-  // dealer hits
-  if (sum_D <= 16) {
+    // dealer hit
+  } else if (sum_D <= 16) {
     alert("He has to hit.");
-    var hitCard = cardDeck_D[Math.floor(Math.random() * cardDeck.length)];
-    cardDeck_D = removeCard(hitCard);
-    alert("His next card is [" + hitCard + "]");
-    // if the card is an ace:
-    if (hitCard==="C1" || hitCard==="S1" || hitCard==="D1" || hitCard==="H1") {
-      if (sum_D + 11 > 21) {
-        return addSum_D(1);
-      } else {
-        return addSum_D(11);
-      };
-    // if the card isn't an ace:  
-    } else {
-      return addSum_D(cardDeckObj[hitCard]);
-    };
-  // dealer stands  
+    hitCard_D = cardDeck_D[Math.floor(Math.random() * cardDeck_D.length)];
+    cardDeck_D = removeCard(cardDeck_D, hitCard_D);
+    alert("His next card is [" + hitCard_D + "]");
+    detectAce(hitCard_D);
+    return dealer();
+    // dealer stands  
   } else if (sum_D > 16) {
     alert("He has to stand.");
-    return  playerVSdealer();
+    return playerVSdealer();
   };
 };
 
-// 9.Compare the points (player and dealer)
+// 7.Compare the points (player and dealer)
 function playerVSdealer() {
   alert("The final points:\nYou [" + sum + "] VS [" + sum_D + "] Dealer");
   if (sum > 21 && sum_D > 21) {
@@ -203,7 +208,7 @@ function playerVSdealer() {
   } else if (sum <= 21 && sum_D > 21) {
     alert("You win because dealer busts!");
     return betResult("win");
-  } else if (sum > sum_D) { 
+  } else if (sum > sum_D) {
     alert("You win! Congratulations!!");
     return betResult("win");
   } else if (sum < sum_D) {
@@ -222,10 +227,10 @@ function playerVSdealer() {
   };
 };
 
-// 10.Return the bet
+// 8.Return the bet
 function betResult(result) {
   if (result === "win") {
-    alert("Your bet $" + bet + " is now doubled $" + (bet*2) + "! Hooray!!")
+    alert("Your bet $" + bet + " is now doubled $" + (bet * 2) + "! Hooray!!")
     bet *= 2;
     wallet += bet;
   } else if (result === "lose") {
@@ -236,10 +241,10 @@ function betResult(result) {
   };
   alert("You have now $" + wallet + " in your wallet.");
   return repeat_D();
-  
+
 };
 
-// 11.Ask to repeat the game with dealer
+// 9.Ask to repeat the game with dealer
 function repeat_D() {
   // if the wallet = 0:
   if (wallet == 0) {
@@ -260,7 +265,7 @@ function repeat_D() {
     var response = prompt("The money in your wallet will NOT be saved. Are you sure to quit Black Jack?\n[1]Yes\n[2]No", "Type 1 or 2");
     if (response === "1") {
       alert("Thank you for playing, have a good day!");
-      return ;
+      return;
     } else {
       return repeat_D();
     };
@@ -297,7 +302,7 @@ function gameType() {
 
 // 2.Confirm the game type
 function confirm(num) {
-  if(num === 1) {
+  if (num === 1) {
     alert("You play a single game of Blackjack.\n \nIf you get over 21 points, the game is over.\nTry to get 21 or under!")
     return deal2Cards();
   } else if (num === 2) {
@@ -306,136 +311,42 @@ function confirm(num) {
     wallet = 0;
     alert("Let's play against a dealer!")
     return playerBet("100");
-  }
+  };
 };
 
 // 3.Deal the first 2 cards and delete them from the card deck
-function deal2Cards() { 
+function deal2Cards() {
   // reset the card deck and sum
   cardDeck = [];
   cardDeck = generate52Cards();
   sum = 0;
+  turn = "player";
   // First card
-  var firstCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
-  cardDeck = removeCard(firstCard);
+  cardDeck = dealFirstCard(cardDeck);
   // Second card
-  var secondCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
-  cardDeck = removeCard(secondCard);
-  // set the first 2 cards in the array
-  first2Cards = [firstCard, secondCard];
+  cardDeck = dealSecondCard(cardDeck);
   alert("...Now dealing...");
-  alert("Open the cards!");  
-  alert("The first 2 cards are [" + first2Cards + "]");
-  return separateAce(first2Cards);
+  alert("Open the cards!");
+  alert("The first 2 cards are [" + this.firstCard + " and " + this.secondCard + "]");
+  detectAce(this.firstCard);
+  detectAce(this.secondCard);
+  return judgment();
 }
 
-// 4.Ace detector
-function separateAce() {
-  f = first2Cards[0];
-  s = first2Cards[1];
-  f1 = cardDeckObj[f][0] + cardDeckObj[s];
-  f11 = cardDeckObj[f][1] + cardDeckObj[s];
-  s1 = cardDeckObj[f] + cardDeckObj[s][0];
-  s11 = cardDeckObj[f] + cardDeckObj[s][1];
-  // if the both cards are aces:
-  if ((f==="C1" || f==="S1" || f==="D1" || f==="H1") && (s==="C1" || s==="S1" || s==="D1" || s==="H1")) {
-    return choose1or11("both");
-  // if the first card is an ace:
-  } else if (f==="C1" || f==="S1" || f==="D1" || f==="H1") {
-    if (f11 === 21) {
-      return addSum(21);
-    } else if (f11 > 21) {
-      alert("Your ace has to value '1', otherwise the sum will be over 21 points.");
-      return addSum(f1);
-    } else {
-      return choose1or11("first");
-    };
-  // if the second card is an ace:
-  } else if (s==="C1" || s==="S1" || s==="D1" || s==="H1") {
-    if (s11 === 21) {
-      return addSum(21);
-    } else if (s11 > 21) {
-      alert("Your ace has to value '1', otherwise the sum will be over 21 points.");
-      return addSum(s1);
-    } else {
-      return choose1or11("second");
-    };
-  // if there are no ace in the first 2 cards:
-  } else {
-    firstCardsSum = cardDeckObj[f] + cardDeckObj[s];
-    return addSum(firstCardsSum);
-  }
-};
-
-// 4.5.Choose 1 or 11 if the card is an ace
-function choose1or11(which) {
-  var explainAce = "Ace can be counted either 1 or 11. Which value do you want to use?";
-  // if the first card is an ace:
-  if (which === "first") {
-    var chooseAce = prompt(explainAce + "\n The other card is: " + cardDeckObj[s], "Type 1 or 11");
-    if (chooseAce === "1") {
-      return addSum(f1);
-    } else if (chooseAce === "11") {
-      return addSum(f11);
-    } else if (chooseAce) {
-      alert("Please type 1 or 11!");
-      return choose1or11("first");
-    };      
-  // if the second card is an ace:
-  } else if (which === "second") {
-    var chooseAce = prompt(explainAce + "\n The other card is: " + cardDeckObj[f], "Type 1 or 11");
-    if (chooseAce === "1") {
-      return addSum(s1);
-    } else if (chooseAce === "11") {
-       return addSum(s11);
-    } else if (chooseAce) {
-      alert("Please type 1 or 11!");
-      return choose1or11("second");
-    };
-  // if the card which player hits is an ace:
-  } else if (which === "third") {
-      var chooseAce = prompt(explainAce, "Type 1 or 11");
-    if (chooseAce === "1") {
-      return addSum(1);
-    } else if (chooseAce === "11") {
-      return addSum(11);
-    } else if (chooseAce) {
-      alert("Please type 1 or 11!");
-      return choose1or11("third");
-    };
-  // if the both of the first 2 cards are aces:
-  } else if (which === "both") {
-    var chooseAce = prompt("Ace can be counted either 1 or 11. You have 2 aces. Please choose the combination of aces:\n[1]1 + 1 = 2\n[2]1 + 11 = 12", "Type 1 or 2");
-    if (chooseAce === "1") {
-      return addSum(2);
-    } else if (chooseAce === "2") {
-      return addSum(12);
-    } else if (chooseAce) {
-      alert("Please type 1 or 11!");
-      return choose1or11("both");
-    }
-  };
-};
-
-// 5. Make the sum of the cards (finish the game if Black Jack / 21 points)
-function addSum(sumNumber) {
-  // gather points
-  sum += sumNumber;
-  alert("The sum of the cards = " + sum);  
-  // if the sum is exactly 21 points:
+// 4. Judge the sum
+function judgment() {
+  alert("The sum of the cards = " + sum);
   if (sum === 21) {
-    if (cardDeck.length === "50") {
+    if (cardDeck.length === 50) {
       alert("Wow, you've got Black Jack!!!\nSo cool!!!");
-    } else {  
-       alert("Wow, you've got exactly 21 points! Nice!");
+    } else {
+      alert("Wow, you've got exactly 21 points! Nice!");
     };
-    // for play against dealer mode
     if (checkGameType === 1) {
       return dealer();
     } else {
       return repeat();
     };
-  // if the sum is over 21:
   } else if (sum > 21) {
     alert("Booooooooom! You bust!");
     if (checkGameType === 1) {
@@ -444,13 +355,12 @@ function addSum(sumNumber) {
     } else {
       return repeat();
     };
-  // if the sum is under 21:
-  } else {
+  } else if (sum < 21) {
     return standOrHit();
   };
 };
 
-// 6.Choose Stand or Hit
+// 5.Choose Stand or Hit
 function standOrHit() {
   var ask = prompt("Do you want to stand, or hit? Type 1 or 2!\n(Your sum is now = " + sum + ")\n[1]Stand (stop to get a card)\n[2]Hit (get more card and gain the points)", "Type 1 or 2");
   // Stand
@@ -462,34 +372,26 @@ function standOrHit() {
     } else {
       return repeat();
     };
-  // Hit
+    // Hit
   } else if (ask === "2") {
-    return  hit();
+    return hit();
   } else {
     alert("Please type 1 or 2!")
     return standOrHit();
   };
 };
 
-// 6.5.Hit
+// 5.5.Hit
 function hit() {
-  var hitCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
-  cardDeck = removeCard(hitCard);
+  turn = "player";
+  hitCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
+  cardDeck = removeCard(cardDeck, hitCard);
   alert("Your next card is: [" + hitCard + "]");
-  // if the card is an ace:
-  if (hitCard==="C1" || hitCard==="S1" || hitCard==="D1" || hitCard==="H1") {
-    if (sum + 11 > 21) {
-      alert("Your ace has to value '1', otherwise the sum will be over 21 points.");
-      return addSum(1);
-    } else {
-      return choose1or11("third");
-    };
-  } else {
-    return addSum(cardDeckObj[hitCard]);
-  };
+  detectAce(hitCard);
+  return judgment();
 };
 
-// 7.Ask to repeat the game
+// 9.Ask to repeat the game
 function repeat() {
   var playMore = prompt("Do you want to play one more time?\n[1]Yes\n[2]No", "Type 1 or 2")
   if (playMore === "1") {
