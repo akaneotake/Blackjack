@@ -1,11 +1,10 @@
 ////// Global Variables
 var cardDeckObj = {};
+var cardDeck = [];
 // For Player
-var playerDeck = [];
 var playerHand = [];
 var playerSum = 0;
 // For Dealer
-var dealerDeck = [];
 var dealerHand = [];
 var dealerSum = 0;
 // For Games against Dealer
@@ -17,15 +16,15 @@ var wallet = 0;
 ////// Functions
 // [Function] Make an array of card deck with 52 cards
 function generate52Cards() {
-  var deck = [];
+  cardDeck = [];
   var suits = ["C", "S", "D", "H"];
   var ranks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
   for (var i = 0; i < suits.length; i++) {
     for (var j = 0; j < ranks.length; j++) {
-      deck.push(suits[i] + ranks[j]);
+      cardDeck.push(suits[i] + ranks[j]);
     };
   };
-  return deck;
+  return cardDeck;
 };
 
 // [Function] Make an object of the 52 cards (property = card: number value)
@@ -34,8 +33,8 @@ function createCardDeckObj() {
   // make property values (number)
   var numberValue = numbers.concat(numbers).concat(numbers.concat(numbers));
   // connect keys and values
-  for (var i = 0; i < playerDeck.length; i++) {
-    var a = playerDeck[i];
+  for (var i = 0; i < cardDeck.length; i++) {
+    var a = cardDeck[i];
     var b = numberValue[i];
     cardDeckObj[a] = b;
   };
@@ -43,26 +42,26 @@ function createCardDeckObj() {
 };
 
 // [Function] Delete the dealt card
-function removeCard(deck, card) {
-  var index = deck.indexOf(card);
-  deck = deck.slice(0, index).concat(deck.slice(index + 1));
-  return deck;
+function removeCard(card) {
+  var index = cardDeck.indexOf(card);
+  cardDeck = cardDeck.slice(0, index).concat(cardDeck.slice(index + 1));
+  return cardDeck;
 };
 
 // [Function] Deal the first card
-function dealFirstCard(deck, hand) {
-  this.firstCard = deck[Math.floor(Math.random() * deck.length)];
+function dealFirstCard(hand) {
+  this.firstCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
   hand.push(this.firstCard);
-  deck = removeCard(deck, this.firstCard);
-  return deck;
+  cardDeck = removeCard(this.firstCard);
+  return cardDeck;
 };
 
 // [Function] Deal the second card
-function dealSecondCard(deck, hand) {
-  this.secondCard = deck[Math.floor(Math.random() * deck.length)];
+function dealSecondCard(hand) {
+  this.secondCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
   hand.push(this.secondCard);
-  deck = removeCard(deck, this.secondCard);
-  return deck;
+  cardDeck = removeCard(this.secondCard);
+  return cardDeck;
 };
 
 // [Function] Sum the hand
@@ -112,14 +111,13 @@ function playerBet(money) {
 // 2.2. Dealer: Deal the first 2 cards and delete them from the card deck (show one card to the player)
 function deal2Cards_D() {
   // reset the card deck and sum for dealer
-  dealerDeck = generate52Cards();
   dealerHand = [];
   dealerSum = 0;
   turn = "dealer";
   // First card
-  dealerDeck = dealFirstCard(dealerDeck, dealerHand);
+  cardDeck = dealFirstCard(dealerHand);
   // Second card
-  dealerDeck = dealSecondCard(dealerDeck, dealerHand);
+  cardDeck = dealSecondCard(dealerHand);
   // show one of the dealer's card to player 
   alert("First, the dealer gets 2 cards.");
   alert("One of the dealer's card is [" + this.firstCard + "]");
@@ -133,13 +131,10 @@ function dealer() {
   turn = "dealer";
   dealerSum = sumHand(dealerHand);
   // Comment after the player's turn
-  if (dealerDeck.length === 50) {
-    alert("Now dealer's turn.");
-  };
   alert("Dealer's cards: [" + dealerHand + "]\nThe sum of dealer's cards = " + dealerSum);
   // if the sum is exactly 21 points:
   if (dealerSum === 21) {
-    if (dealerDeck.length === 50) {
+    if (dealerHand.length === 2) {
       alert("Oh no, he got Black Jack!!!");
     } else {
       alert("Oh no, he got exactly 21 points!");
@@ -152,9 +147,9 @@ function dealer() {
   // dealer hit
   } else if (dealerSum <= 16) {
     alert("He has to hit.");
-    var hitCard = dealerDeck[Math.floor(Math.random() * dealerDeck.length)];
+    var hitCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
     dealerHand.push(hitCard);
-    dealerDeck = removeCard(dealerDeck, hitCard);
+    cardDeck = removeCard(hitCard);
     alert("His next card is [" + hitCard + "]");
     return dealer();
   // dealer stands  
@@ -236,8 +231,7 @@ function chooseGameType() {
   // reset the game type
   gameType = 0;
   // create the 52 cards and number values
-  playerDeck = [];
-  playerDeck = generate52Cards();
+  generate52Cards();
   createCardDeckObj();
   // choose the game type
   alert("*** Black Jack ***\n*** Welcome! ***");
@@ -275,14 +269,13 @@ function confirm(num) {
 // 3.Deal the first 2 cards and delete them from the card deck
 function deal2Cards() {
   // reset player's card deck and sum
-  playerDeck = generate52Cards();
   playerHand = [];
   playerSum = 0;
   turn = "player";
   // First card
-  playerDeck = dealFirstCard(playerDeck, playerHand);
+  cardDeck = dealFirstCard(playerHand);
   // Second card
-  playerDeck = dealSecondCard(playerDeck, playerHand);
+  cardDeck = dealSecondCard(playerHand);
   alert("...Now dealing...");
   alert("Open the cards!");
   alert("The first 2 cards are [" + this.firstCard + " and " + this.secondCard + "]");
@@ -294,12 +287,13 @@ function deal2Cards() {
 function judgment() {
   alert("You cards: [" + playerHand + "]\nThe sum of the cards = " + playerSum);
   if (playerSum === 21) {
-    if (playerDeck.length === 50) {
+    if (playerHand.length === 2) {
       alert("Wow, you've got Black Jack!!!\nSo cool!!!");
     } else {
       alert("Wow, you've got exactly 21 points! Nice!");
     };
     if (gameType === 1) {
+      alert("Now dealer's turn.");
       return dealer();
     } else {
       return repeat();
@@ -324,6 +318,7 @@ function standOrHit() {
   if (ask === "1") {
     alert("Your final points = " + playerSum + "\n" + (21 - playerSum) + " more point(s) for 21.");
     if (gameType === 1) {
+      alert("Now dealer's turn.");
       return dealer();
     } else {
       return repeat();
@@ -340,9 +335,9 @@ function standOrHit() {
 // 5.5.Hit
 function hit() {
   turn = "player";
-  var hitCard = playerDeck[Math.floor(Math.random() * playerDeck.length)];
+  var hitCard = cardDeck[Math.floor(Math.random() * cardDeck.length)];
   playerHand.push(hitCard);
-  playerDeck = removeCard(playerDeck, hitCard);
+  cardDeck = removeCard(hitCard);
   alert("Your next card is: [" + hitCard + "]");
   playerSum = sumHand(playerHand);
   return judgment();
